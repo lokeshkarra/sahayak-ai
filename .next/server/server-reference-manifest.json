@@ -1,0 +1,33 @@
+{
+  "node": {
+    "4029509e3bdf128390f536ca203c2aa20ffe9a7d1f": {
+      "workers": {
+        "app/(protected)/page": {
+          "moduleId": "[project]/.next-internal/server/app/(protected)/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/ai/flows/voice-query.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        },
+        "app/(protected)/scenario-planning/page": {
+          "moduleId": "[project]/.next-internal/server/app/(protected)/scenario-planning/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/ai/flows/voice-query.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/ai/flows/scenario-planning.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(protected)/page": "action-browser",
+        "app/(protected)/scenario-planning/page": "action-browser"
+      }
+    },
+    "4040d8f42d9c2ca9a78f7c8b5f0601231526ed1e8d": {
+      "workers": {
+        "app/(protected)/scenario-planning/page": {
+          "moduleId": "[project]/.next-internal/server/app/(protected)/scenario-planning/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/ai/flows/voice-query.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/ai/flows/scenario-planning.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(protected)/scenario-planning/page": "action-browser"
+      }
+    }
+  },
+  "edge": {},
+  "encryptionKey": "xa/mO43xScMRsKay0l6JEdesqMLDWI9230cznp7Jfec="
+}

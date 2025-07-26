@@ -1,0 +1,27 @@
+{
+  "node": {
+    "4029509e3bdf128390f536ca203c2aa20ffe9a7d1f": {
+      "workers": {
+        "app/(protected)/assets/page": {
+          "moduleId": "[project]/.next-internal/server/app/(protected)/assets/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/ai/flows/voice-query.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/ai/flows/update-asset-value.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(protected)/assets/page": "action-browser"
+      }
+    },
+    "408688527f9e4d9778ff537a67ac2fcce87778a357": {
+      "workers": {
+        "app/(protected)/assets/page": {
+          "moduleId": "[project]/.next-internal/server/app/(protected)/assets/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/ai/flows/voice-query.ts [app-rsc] (ecmascript)\", ACTIONS_MODULE1 => \"[project]/src/ai/flows/update-asset-value.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript)",
+          "async": false
+        }
+      },
+      "layer": {
+        "app/(protected)/assets/page": "action-browser"
+      }
+    }
+  },
+  "edge": {}
+}

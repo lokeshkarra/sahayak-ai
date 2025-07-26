@@ -1,0 +1,7 @@
+{
+  "/(protected)/page": "app/(protected)/page.js",
+  "/(protected)/scenario-planning/page": "app/(protected)/scenario-planning/page.js",
+  "/api/mcp/route": "app/api/mcp/route.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/login/page": "app/login/page.js"
+}
