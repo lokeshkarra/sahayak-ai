@@ -157,8 +157,8 @@ export default function DashboardPage() {
     const [data, setData] = useState<{
         netWorth: NetWorthData;
         bankTransactions: BankTransactionsData[];
-        creditReport: CreditReportData;
-        epfDetails: EPFData;
+        creditReport: CreditReportData | null; // Allow null for creditReport
+        epfDetails: EPFData | null; // Allow null for epfDetails
     } | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
@@ -167,18 +167,18 @@ export default function DashboardPage() {
     useEffect(() => {
         const user = sessionStorage.getItem("mcp-user");
         if (!user) {
-            router.push("/"); // Redirect to login page if no user in session
+            router.push("/login"); // Redirect to login page if no user in session
             return;
         }
 
-        // This is the new data fetching logic that calls your MCP server
         const fetchAndSetData = async () => {
             setIsLoading(true);
             setError("");
+            console.log("Fetching data (before try block)");
             try {
+                console.log("Fetching data from MCP server...");
                 const mcpClient = new McpClient();
 
-                // Call all the tools concurrently for better performance
                 const [
                     netWorthRes,
                     bankTransactionsRes,
@@ -191,20 +191,41 @@ export default function DashboardPage() {
                     mcpClient.callTool('fetch_epf_details'),
                 ]);
 
-                // Structure the data to match what the UI components expect
+                // Initialize with null or default empty values
+                let creditReportData: CreditReportData | null = null;
+                let epfData: EPFData | null = null;
+                let bankTxnsData: BankTransactionsData[] = [];
+
+                // Safely access creditReportData
+                if (creditReportRes.creditReports && creditReportRes.creditReports.length > 0) {
+                    creditReportData = creditReportRes.creditReports[0].creditReportData;
+                }
+
+                // Safely access epfDetails
+                if (epfDetailsRes.uanAccounts && epfDetailsRes.uanAccounts.length > 0) {
+                    epfData = epfDetailsRes.uanAccounts[0].rawDetails;
+                }
+
+                // Safely access bankTransactions
+                if (bankTransactionsRes.bankTransactions && bankTransactionsRes.bankTransactions.length > 0) {
+                    bankTxnsData = bankTransactionsRes.bankTransactions;
+                }
+
                 const structuredData = {
                     netWorth: netWorthRes.netWorthResponse,
-                    bankTransactions: bankTransactionsRes.bankTransactions,
-                    creditReport: creditReportRes.creditReports[0].creditReportData,
-                    epfDetails: epfDetailsRes.uanAccounts[0].rawDetails,
+                    bankTransactions: bankTxnsData, // Use the safely accessed data
+                    creditReport: creditReportData, // Use the safely accessed data
+                    epfDetails: epfData, // Use the safely accessed data
                 };
                 
                 setData(structuredData);
 
             } catch (err: any) {
                 console.error("Dashboard Fetch Error:", err);
+                // More specific error messages could be added here based on err.name or err.code
                 setError(err.message || "An unknown error occurred while fetching your data.");
             } finally {
+                console.log("inside finaly");
                 setIsLoading(false);
             }
         };
@@ -221,6 +242,7 @@ export default function DashboardPage() {
         );
     }
     
+    // If there's an error, or if data is null (meaning initial fetch failed)
     if (error || !data) {
          return (
             <main className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
@@ -233,7 +255,7 @@ export default function DashboardPage() {
         );
     }
 
-    // --- JSX RENDER (Unchanged, but now powered by live data) ---
+    // --- JSX RENDER (Now with conditional rendering for potentially missing data) ---
     return (
         <main className="min-h-screen bg-black text-white p-4 sm:p-6 lg:p-8">
             <header className="flex justify-between items-center mb-6">
@@ -244,7 +266,7 @@ export default function DashboardPage() {
                 <Button variant="outline" onClick={() => {
                     // Clear all session data on logout for a clean slate
                     sessionStorage.clear();
-                    router.push('/');
+                    router.push('/login');
                 }}>Logout</Button>
             </header>
 
@@ -259,7 +281,8 @@ export default function DashboardPage() {
                 <TabsContent value="overview" className="mt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <NetWorthSummary data={data.netWorth} />
-                        <CreditScoreGauge score={Number(data.creditReport?.score?.bureauScore || 0)} />
+                        {/* Conditionally render CreditScoreGauge */}
+                        {data.creditReport && <CreditScoreGauge score={Number(data.creditReport.score?.bureauScore || 0)} />}
                         
                         <Card className="bg-gray-900/50">
                             <CardHeader><CardTitle className="flex items-center gap-2"><TrendingUp className="text-green-500" /> Assets</CardTitle></CardHeader>
@@ -285,19 +308,25 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
 
-                         <Card className="bg-gray-900/50">
+                        <Card className="bg-gray-900/50">
                             <CardHeader><CardTitle className="flex items-center gap-2"><Briefcase className="text-blue-400" /> EPF Summary</CardTitle></CardHeader>
                              <CardContent>
-                                <div className="flex justify-between items-center text-lg mb-2">
-                                    <p className="text-gray-300">Total PF Balance</p>
-                                    <p className="font-bold">{formatCurrency(data.epfDetails?.overall_pf_balance?.current_pf_balance || 0)}</p>
-                                </div>
-                                {(data.epfDetails?.est_details || []).map((est: EPFEstablishment) => (
-                                     <div key={est.est_name} className="flex justify-between items-center text-sm mt-4">
-                                        <p className="text-gray-400">{est.est_name}</p>
-                                        <p className="font-medium">{formatCurrency(est.pf_balance.net_balance)}</p>
-                                    </div>
-                                ))}
+                                {data.epfDetails ? (
+                                    <>
+                                        <div className="flex justify-between items-center text-lg mb-2">
+                                            <p className="text-gray-300">Total PF Balance</p>
+                                            <p className="font-bold">{formatCurrency(data.epfDetails.overall_pf_balance?.current_pf_balance || 0)}</p>
+                                        </div>
+                                        {(data.epfDetails.est_details || []).map((est: EPFEstablishment) => (
+                                            <div key={est.est_name} className="flex justify-between items-center text-sm mt-4">
+                                                <p className="text-gray-400">{est.est_name}</p>
+                                                <p className="font-medium">{formatCurrency(est.pf_balance.net_balance)}</p>
+                                            </div>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <p className="text-gray-400 text-center py-4">No EPF details available.</p>
+                                )}
                             </CardContent>
                         </Card>
                     </div>
@@ -316,7 +345,7 @@ export default function DashboardPage() {
                                         <TableHead className="text-right">Balance / Value</TableHead>
                                     </TableRow>
                                 </TableHeader>
-                                <TableBody>
+                                  <TableBody>
                                     {Object.values(data.netWorth?.accountDetailsBulkResponse?.accountDetailsMap || {}).map((item: {accountDetails: AccountDetailsInfo}) => (
                                         <TableRow key={item.accountDetails.maskedAccountNumber}>
                                             <TableCell className="font-medium">{item.accountDetails.fipMeta.displayName}</TableCell>
@@ -347,16 +376,22 @@ export default function DashboardPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {(data.bankTransactions?.[0]?.txns || []).slice(0, 25).map((txn: BankTransaction, index: number) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{txn[2]}</TableCell>
-                                            <TableCell>{data.bankTransactions[0].bank}</TableCell>
-                                            <TableCell className="text-gray-400 text-xs">{txn[1]}</TableCell>
-                                            <TableCell className={`text-right font-semibold ${txn[3] === 1 ? 'text-green-500' : 'text-red-500'}`}>
-                                                {txn[3] === 1 ? '+' : '-'} {formatCurrency(txn[0])}
-                                            </TableCell>
+                                    {(data.bankTransactions?.[0]?.txns || []).slice(0, 25).length > 0 ? (
+                                        (data.bankTransactions[0].txns || []).slice(0, 25).map((txn: BankTransaction, index: number) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{txn[2]}</TableCell>
+                                                <TableCell>{data.bankTransactions[0].bank}</TableCell>
+                                                <TableCell className="text-gray-400 text-xs">{txn[1]}</TableCell>
+                                                <TableCell className={`text-right font-semibold ${txn[3] === 1 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    {txn[3] === 1 ? '+' : '-'} {formatCurrency(txn[0])}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center text-gray-400 py-4">No recent bank transactions available.</TableCell>
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -365,38 +400,58 @@ export default function DashboardPage() {
 
                 <TabsContent value="credit" className="mt-6">
                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-1">
-                            <CreditScoreGauge score={Number(data.creditReport?.score?.bureauScore || 0)} />
-                        </div>
-                        <div className="md:col-span-2">
-                            <Card className="bg-gray-900/50">
-                                <CardHeader><CardTitle>Loan & Credit Accounts</CardTitle></CardHeader>
-                                <CardContent>
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead>Lender</TableHead>
-                                                <TableHead>Type</TableHead>
-                                                <TableHead className="text-right">Balance</TableHead>
-                                                <TableHead className="text-right">Past Due</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {(data.creditReport?.creditAccount?.creditAccountDetails || []).map((acc: CreditAccountDetails, index: number) => (
-                                                <TableRow key={`${acc.subscriberName}-${index}`}>
-                                                    <TableCell>{acc.subscriberName}</TableCell>
-                                                    <TableCell>Loan/Credit</TableCell>
-                                                    <TableCell className="text-right">{formatCurrency(acc.currentBalance)}</TableCell>
-                                                    <TableCell className={`text-right ${Number(acc.amountPastDue) > 0 ? 'text-red-500 font-bold' : ''}`}>
-                                                        {formatCurrency(acc.amountPastDue)}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                        </TableBody>
-                                    </Table>
-                                </CardContent>
-                            </Card>
-                        </div>
+                        {data.creditReport ? ( // Only render if creditReport data exists
+                            <>
+                                <div className="md:col-span-1">
+                                    <CreditScoreGauge score={Number(data.creditReport.score?.bureauScore || 0)} />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <Card className="bg-gray-900/50">
+                                        <CardHeader><CardTitle>Loan & Credit Accounts</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Lender</TableHead>
+                                                        <TableHead>Type</TableHead>
+                                                        <TableHead className="text-right">Balance</TableHead>
+                                                        <TableHead className="text-right">Past Due</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {(data.creditReport.creditAccount?.creditAccountDetails || []).length > 0 ? (
+                                                        (data.creditReport.creditAccount.creditAccountDetails || []).map((acc: CreditAccountDetails, index: number) => (
+                                                            <TableRow key={`${acc.subscriberName}-${index}`}>
+                                                                <TableCell>{acc.subscriberName}</TableCell>
+                                                                <TableCell>Loan/Credit</TableCell>
+                                                                <TableCell className="text-right">{formatCurrency(acc.currentBalance)}</TableCell>
+                                                                <TableCell className={`text-right ${Number(acc.amountPastDue) > 0 ? 'text-red-500 font-bold' : ''}`}>
+                                                                    {formatCurrency(acc.amountPastDue)}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))
+                                                    ) : (
+                                                        <TableRow>
+                                                            <TableCell colSpan={4} className="text-center text-gray-400 py-4">No loan or credit accounts available.</TableCell>
+                                                        </TableRow>
+                                                    )}
+                                                </TableBody>
+                                            </Table>
+                                        </CardContent>
+                                    </Card>
+                                </div>
+                            </>
+                        ) : (
+                            // Display a message when credit report data is not available
+                            <div className="md:col-span-3">
+                                <Card className="bg-gray-900/50">
+                                    <CardHeader><CardTitle>Credit Report</CardTitle></CardHeader>
+                                    <CardContent className="text-center text-gray-400 py-8">
+                                        No credit report details available for your account.
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        )}
                      </div>
                 </TabsContent>
             </Tabs>

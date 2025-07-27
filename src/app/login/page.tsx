@@ -16,7 +16,7 @@ import { Loader } from "lucide-react";
 import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("1313131313"); // Test number for "Balanced Growth Tracker"
+  const [username, setUsername] = useState(""); // Test number for "Balanced Growth Tracker"
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -31,7 +31,7 @@ export default function LoginPage() {
     setTimeout(() => {
       // In a real app, you'd authenticate. Here we just check for the test user.
       // The fi-mcp-dev server uses the phone number for identity but doesn't validate passwords.
-      if (username === "1313131313" && password === "amma") {
+      if (password === "amma") {
         if (typeof window !== "undefined") {
           sessionStorage.setItem("isLoggedIn", "true");
           sessionStorage.setItem("mcp-user", username);
